@@ -11,18 +11,29 @@ interface GithubRepoApiResponse {
     html_url: string;
 }
 
-export const fetchSelectedProjects = async (username: string, repoNames: string[]): Promise<IProject[]> => {
-    const promises = repoNames.map(repoName =>
-        fetch(`https://api.github.com/repos/${username}/${repoName}`)
-            .then(response => {
-                if (!response.ok) throw new Error(`Falha ao buscar ${repoName}`);
-                return response.json() as Promise<GithubRepoApiResponse>;
-            })
+const token = import.meta.env.VITE_GITHUB_TOKEN;
+
+export const fetchSelectedProjects = async (
+    username: string,
+    repoNames: string[]
+): Promise<IProject[]> => {
+    const promises = repoNames.map((repoName) =>
+        fetch(`https://api.github.com/repos/${username}/${repoName}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }).then((response) => {
+            if (!response.ok) throw new Error(`Falha ao buscar ${repoName}`);
+            return response.json() as Promise<GithubRepoApiResponse>;
+        })
     );
 
     const results = await Promise.allSettled(promises);
     const successfulProjects: IProject[] = results
-        .filter((result): result is PromiseFulfilledResult<GithubRepoApiResponse> => result.status === 'fulfilled')
+        .filter(
+            (result): result is PromiseFulfilledResult<GithubRepoApiResponse> =>
+                result.status === "fulfilled"
+        )
         .map(({ value: repo }) => ({
             id: repo.id,
             name: repo.name,
